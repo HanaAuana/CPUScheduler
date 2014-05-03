@@ -1,8 +1,19 @@
 
+
+
 public class Driver {
 
+
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		//Read in text file
+		
+		//Parse number of CPUs
+		
+		//Parse algorithm selected
+		
+		//Parse jobs file
+		
+		
 
 	}
 
