@@ -4,15 +4,17 @@ public class Job {
 	
 	public int proc;
 	public char type;
-	public int timeNeeded;
+	public long originalTime;
+	public long timeNeeded;
 	public long enterTime;
 	public long firstAddressedTime;
 	public long finishTime;
 	
-	public Job(int proc, char type, int timeNeeded){
+	public Job(int proc, char type, int originalTime){
 		this.proc = proc;
 		this.type = type;
-		this.timeNeeded = timeNeeded;
+		this.originalTime = originalTime;
+		this.timeNeeded = this.originalTime;
 		this.firstAddressedTime = -1;
 		this.enterTime = -1;
 		this.finishTime = -1;
