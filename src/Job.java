@@ -10,7 +10,7 @@ public class Job {
 	public long firstAddressedTime;
 	public long finishTime;
 	
-	public Job(int proc, char type, int originalTime){
+	public Job(int proc, char type, long originalTime){
 		this.proc = proc;
 		this.type = type;
 		this.originalTime = originalTime;

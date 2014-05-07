@@ -219,6 +219,7 @@ public class Driver {
 					else{
 						int longer = hasLonger(currJob.timeNeeded, processing); //See if there is a job we should evict
 						if(longer != -1){ //If there is
+							System.out.println("Preempting the job on CPU "+longer+" with length of "+CPUs.get(longer).myJob.timeNeeded+" for job with length of "+ currJob.timeNeeded);
 							Job evictedJob = CPUs.get(longer).assignJob(currJob); //Swap our current job with the job with the longest remaining time
 							toProcess.offer(evictedJob); //Add the evicted Job back to the queue
 						}
@@ -294,6 +295,7 @@ public class Driver {
 	}
 	
 	public int hasLonger(long currTime, ArrayList<Job> list){
+		//System.out.println("looking for something longer than "+currTime);
 		long longestTime = -1;
 		int longestLoc = -1;
 		for(int nextJob = 0; nextJob < list.size();nextJob++){
@@ -393,7 +395,6 @@ public class Driver {
 			System.out.println("Scheduling jobs using preemptive SJF");
 			d.processJobsPSJF(jobs3);
 		}
-
 	}
 	
 	private class JobLengthComparator implements Comparator{

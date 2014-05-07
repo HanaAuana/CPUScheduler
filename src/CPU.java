@@ -21,7 +21,9 @@ public class CPU {
 			return null;
 		}
 		else{
-			Job oldJob = myJob;
+			Job oldJob = new Job(myJob.proc, myJob.type, myJob.originalTime);
+			oldJob.timeNeeded = myJob.timeNeeded;
+			//oldJob.timeNeeded -= (System.currentTimeMillis()- jobStartTime);
 			myJob = newJob;
 			jobStartTime = System.currentTimeMillis();
 			isFree = false;
@@ -30,14 +32,19 @@ public class CPU {
 	}
 	
 	public Job isDone(){
+		
 		long curTime = System.currentTimeMillis();
-		if(curTime >= jobStartTime + myJob.timeNeeded){
+		myJob.timeNeeded -= (curTime-jobStartTime);
+		if(myJob.timeNeeded < 0){
+			myJob.timeNeeded = 0;
+		}
+		if( myJob.timeNeeded == 0){
 			this.isFree = true;
-			myJob.finishTime = curTime;
-			
+			myJob.finishTime = curTime;		
 			return myJob;
 		}
 		else{
+			//System.out.println("Job needs "+myJob.timeNeeded+"ms more");
 			return null;
 		}
 	}
