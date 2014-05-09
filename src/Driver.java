@@ -34,10 +34,10 @@ public class Driver {
 		Job currJob;
 		long lastWork = 0;
 		LinkedList<Job> newJobs = new LinkedList<Job>();
-		newJobs.offer( new Job(1, 'C', 99 ) );
-		newJobs.offer( new Job(1, 'C', 77 ) );
-		newJobs.offer( new Job(1, 'C', 99 ) );
-		newJobs.offer( new Job(1, 'C', 75 ) );
+		newJobs.offer( new Job(1, 'C', 999 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 9 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
 		newJobs.offer( new Job(1, 'C', 10 ) );
 
 		LinkedList<Job> toProcess = new LinkedList<Job>();
@@ -136,10 +136,10 @@ public class Driver {
 		long lastWork = 0;
 
 		LinkedList<Job> newJobs = new LinkedList<Job>();
-		newJobs.offer( new Job(1, 'C', 99 ) );
-		newJobs.offer( new Job(1, 'C', 77 ) );
-		newJobs.offer( new Job(1, 'C', 99 ) );
-		newJobs.offer( new Job(1, 'C', 75 ) );
+		newJobs.offer( new Job(1, 'C', 999 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 9 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
 		newJobs.offer( new Job(1, 'C', 10 ) );
 
 		PriorityQueue<Job> toProcess = new PriorityQueue<Job>(comparartor);
@@ -237,10 +237,10 @@ public class Driver {
 		long lastWork = 0;
 
 		LinkedList<Job> newJobs = new LinkedList<Job>();
-				newJobs.offer( new Job(1, 'C', 99 ) );
-				newJobs.offer( new Job(1, 'C', 77 ) );
-				newJobs.offer( new Job(1, 'C', 99 ) );
-				newJobs.offer( new Job(1, 'C', 75 ) );
+				newJobs.offer( new Job(1, 'C', 999 ) );
+				newJobs.offer( new Job(1, 'C', 7 ) );
+				newJobs.offer( new Job(1, 'C', 9 ) );
+				newJobs.offer( new Job(1, 'C', 7 ) );
 				newJobs.offer( new Job(1, 'C', 10 ) );
 
 		PriorityQueue<Job> toProcess = new PriorityQueue<Job>(comparartor);
