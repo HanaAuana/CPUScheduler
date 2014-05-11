@@ -16,11 +16,8 @@ public class Driver {
 
 	public int numCPU;
 	public int algorithm;
-	public ArrayList<Job> jobs;
-	public ArrayList<CPU> CPUs;
-	Queue<Job> toProcess;
-	ArrayList<Job> processing;
-	LinkedList<Job> processed;
+
+
 	long currentTime;
 	long startTime;
 	long endTime;
@@ -28,27 +25,34 @@ public class Driver {
 	public Driver(int numCPU, int algorithm){
 		this.numCPU= numCPU;
 		this.algorithm = algorithm;
-		this.jobs = new ArrayList<Job>();
 		this.currentTime = -1;
-		
-		
+
+
 	}
 
 	public void processJobsFCFS(ArrayList<Job> jobs){
 		Job currJob;
-		toProcess = new LinkedList<Job>();
-		processed = new LinkedList<Job>();
-		processing = new ArrayList<Job>(numCPU);
+		long lastWork = 0;
+		LinkedList<Job> newJobs = new LinkedList<Job>();
+		newJobs.offer( new Job(1, 'C', 999 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 9 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 10 ) );
+
+		LinkedList<Job> toProcess = new LinkedList<Job>();
+		LinkedList<Job> processed = new LinkedList<Job>();
+		ArrayList<Job> processing = new ArrayList<Job>(numCPU);
 		for(int i = 0; i < numCPU; i++){
 			processing.add(null);
 		}
-		CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
+		ArrayList<CPU> CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
 		for(int i = 0; i < numCPU; i++){
 			CPUs.add(new CPU(i));
 		}
-		
+
 		startTime = System.currentTimeMillis(); //Get start time
-		System.out.println("Scheduling starting at: "+startTime);
+		//System.out.println("Scheduling starting at: "+startTime);
 
 		while(!jobs.isEmpty()){// While we have Jobs to add
 			currentTime = System.currentTimeMillis(); //Get the current time, and set the Job's "Enter time" 
@@ -59,16 +63,21 @@ public class Driver {
 
 		}
 		while( !toProcess.isEmpty() || hasJob(processing) ){
-			for(int i = 0; i < toProcess.size(); i++){ //While we have jobs to process
+
+			int numJobsToProcess = toProcess.size(); 
+			//System.out.println(numJobsToProcess+" jobs to process");
+			for(int i = 0; i < numJobsToProcess; i++){ //While we have jobs to process
 				currJob = toProcess.poll();
 				if(currJob.getTypeString().equals("CPU")){ //If the next job is a CPU job
 					//System.out.println("Processing CPU");
-					int freeCPU = hasFreeCPU();
+					int freeCPU = hasFreeCPU(CPUs);
 					if(freeCPU != -1){// and there is an available CPU
 						//System.out.println("Processing "+currJob+" at "+currentTime);
 						if(CPUs.get(freeCPU).assignJob(currJob) == null){ //If the CPU was free and we didn't kick out another Job
 							//System.out.println("Job added to CPU "+freeCPU);
-							currJob.firstAddressedTime = System.currentTimeMillis();
+							if(currJob.firstAddressedTime == -1){
+								currJob.firstAddressedTime = System.currentTimeMillis();
+							}
 						}
 						else{
 							System.err.println("Job preempted. Shouldn't have happened in FCFS");
@@ -86,41 +95,65 @@ public class Driver {
 				}
 			}
 
-			while( hasJob(processing) ){
-				for(int curCPU = 0; curCPU < CPUs.size(); curCPU++){ //Loop through all of our CPUs
-					if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
-						//System.out.println(curCPU);
-						currJob = CPUs.get(curCPU).isDone(); //Check if the Job on the current CPU is done.
-						if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
-							//System.out.println("CPU "+curCPU+" is free");
-							processed.offer(currJob);
-							processing.set(curCPU, null); //Clear the corresponding location in our processing queue
-							CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
-						}
+			while(!newJobs.isEmpty()){
+				Job newJob = newJobs.pop();
+				newJob.enterTime = System.currentTimeMillis();
+				toProcess.add(newJob);
+			}
+
+			for(int curCPU = 0; curCPU < CPUs.size(); curCPU++){ //Loop through all of our CPUs
+				if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
+					//System.out.println(curCPU);
+					long curTime = System.currentTimeMillis();
+					long timeWorked;
+					if(lastWork != 0){
+						timeWorked = (curTime-lastWork) ;
+					}
+					else{
+						timeWorked = 0;
+					}
+					//System.out.println("Done "+timeWorked+"ms of work since last cycle");
+					currJob = CPUs.get(curCPU).isDone(timeWorked); //Check if the Job on the current CPU is done.
+					if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
+						//System.out.println("CPU "+curCPU+" is free");
+						processed.offer(currJob);
+						processing.set(curCPU, null); //Clear the corresponding location in our processing queue
+						CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
 					}
 				}
+
 			}
+			lastWork = System.currentTimeMillis();
 		}
 		endTime = System.currentTimeMillis();
-		System.out.println("Scheduling ended at:    "+endTime);
+		//System.out.println("Scheduling ended at:    "+endTime);
 		evaluatePerformance(startTime, endTime, processed);		
 	}
-	
+
 	public void processJobsSJF(ArrayList<Job> jobs){
 		Job currJob;
 		Comparator<Job> comparartor = new JobLengthComparator();
-		toProcess = new PriorityQueue<Job>(jobs.size(), comparartor);
-		processed = new LinkedList<Job>();
-		processing = new ArrayList<Job>(numCPU);
+		long lastWork = 0;
+
+		LinkedList<Job> newJobs = new LinkedList<Job>();
+		newJobs.offer( new Job(1, 'C', 999 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 9 ) );
+		newJobs.offer( new Job(1, 'C', 7 ) );
+		newJobs.offer( new Job(1, 'C', 10 ) );
+
+		PriorityQueue<Job> toProcess = new PriorityQueue<Job>(comparartor);
+		LinkedList<Job> processed = new LinkedList<Job>();
+		ArrayList<Job> processing = new ArrayList<Job>(numCPU);
 		for(int i = 0; i < numCPU; i++){
 			processing.add(null);
 		}
-		CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
+		ArrayList<CPU> CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
 		for(int i = 0; i < numCPU; i++){
 			CPUs.add(new CPU(i));
 		}
 		startTime = System.currentTimeMillis(); //Get start time
-		System.out.println("Scheduling starting at: "+startTime);
+		//System.out.println("Scheduling starting at: "+startTime);
 
 		while(!jobs.isEmpty()){// While we have Jobs to add
 			currentTime = System.currentTimeMillis(); //Get the current time, and set the Job's "Enter time" 
@@ -131,16 +164,20 @@ public class Driver {
 
 		}
 		while( !toProcess.isEmpty() || hasJob(processing) ){
-			for(int i = 0; i < toProcess.size(); i++){ //While we have jobs to process
+			int numJobsToProcess = toProcess.size(); 
+			//System.out.println(numJobsToProcess+" jobs to process");
+			for(int i = 0; i < numJobsToProcess; i++){ //While we have jobs to process
 				currJob = toProcess.poll();
 				if(currJob.getTypeString().equals("CPU")){ //If the next job is a CPU job
 					//System.out.println("Processing CPU");
-					int freeCPU = hasFreeCPU();
+					int freeCPU = hasFreeCPU(CPUs);
 					if(freeCPU != -1){// and there is an available CPU
 						//System.out.println("Processing "+currJob+" at "+currentTime);
 						if(CPUs.get(freeCPU).assignJob(currJob) == null){ //If the CPU was free and we didn't kick out another Job
 							//System.out.println("Job added to CPU "+freeCPU);
-							currJob.firstAddressedTime = System.currentTimeMillis();
+							if(currJob.firstAddressedTime == -1){
+								currJob.firstAddressedTime = System.currentTimeMillis();
+							}
 						}
 						else{
 							System.err.println("Job preempted. Shouldn't have happened in regular SJF");
@@ -157,42 +194,67 @@ public class Driver {
 					//For now, we just assume IO requests can be handled independently. 
 				}
 			}
+			
+			while(!newJobs.isEmpty()){
+				Job newJob = newJobs.pop();
+				newJob.enterTime = System.currentTimeMillis();
+				toProcess.add(newJob);
+			}
 
-			while( hasJob(processing) ){
-				for(int curCPU = 0; curCPU < CPUs.size(); curCPU++){ //Loop through all of our CPUs
-					if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
-						//System.out.println(curCPU);
-						currJob = CPUs.get(curCPU).isDone(); //Check if the Job on the current CPU is done.
-						if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
-							//System.out.println("CPU "+curCPU+" is free");
-							processed.offer(currJob);
-							processing.set(curCPU, null); //Clear the corresponding location in our processing queue
-							CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
-						}
+			for(int curCPU = 0; curCPU < CPUs.size(); curCPU++){ //Loop through all of our CPUs
+				if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
+					//System.out.println(curCPU);
+					long curTime = System.currentTimeMillis();
+					long timeWorked;
+					if(lastWork != 0){
+						timeWorked = (curTime-lastWork) ;
+					}
+					else{
+						timeWorked = 0;
+					}
+					//System.out.println("Done "+timeWorked+"ms of work since last cycle");
+					currJob = CPUs.get(curCPU).isDone(timeWorked); //Check if the Job on the current CPU is done.
+					if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
+						//System.out.println("CPU "+curCPU+" is free");
+						processed.offer(currJob);
+						processing.set(curCPU, null); //Clear the corresponding location in our processing queue
+						CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
 					}
 				}
+
 			}
+			lastWork = System.currentTimeMillis();
+
 		}
 		endTime = System.currentTimeMillis();
-		System.out.println("Scheduling ended at:    "+endTime);
+		//System.out.println("Scheduling ended at:    "+endTime);
 		evaluatePerformance(startTime, endTime, processed);
 	}
-	
+
 	public void processJobsPSJF(ArrayList<Job> jobs){
 		Job currJob;
 		Comparator<Job> comparartor = new JobLengthComparator();
-		toProcess = new PriorityQueue<Job>(jobs.size(), comparartor);
-		processed = new LinkedList<Job>();
-		processing = new ArrayList<Job>(numCPU);
+		long lastWork = 0;
+
+		LinkedList<Job> newJobs = new LinkedList<Job>();
+				newJobs.offer( new Job(1, 'C', 999 ) );
+				newJobs.offer( new Job(1, 'C', 7 ) );
+				newJobs.offer( new Job(1, 'C', 9 ) );
+				newJobs.offer( new Job(1, 'C', 7 ) );
+				newJobs.offer( new Job(1, 'C', 10 ) );
+
+		PriorityQueue<Job> toProcess = new PriorityQueue<Job>(comparartor);
+		LinkedList<Job> processed = new LinkedList<Job>();
+		ArrayList<Job> processing = new ArrayList<Job>(numCPU);
 		for(int i = 0; i < numCPU; i++){
 			processing.add(null);
 		}
-		CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
+		ArrayList<CPU> CPUs = new ArrayList<CPU>(numCPU);//Initialize our list of available CPUs
 		for(int i = 0; i < numCPU; i++){
 			CPUs.add(new CPU(i));
 		}
 		startTime = System.currentTimeMillis(); //Get start time
-		System.out.println("Scheduling starting at: "+startTime);
+		//System.out.println("Scheduling starting at: "+startTime);
 
 		while(!jobs.isEmpty()){// While we have Jobs to add
 			currentTime = System.currentTimeMillis(); //Get the current time, and set the Job's "Enter time" 
@@ -203,23 +265,32 @@ public class Driver {
 
 		}
 		while( !toProcess.isEmpty() || hasJob(processing) ){
-			for(int i = 0; i < toProcess.size(); i++){ //While we have jobs to process
+			int numJobsToProcess = toProcess.size(); 
+			//System.out.println(numJobsToProcess+" jobs to process");
+			for(int i = 0; i < numJobsToProcess; i++){ //While we have jobs to process
 				currJob = toProcess.poll();
 				if(currJob.getTypeString().equals("CPU")){ //If the next job is a CPU job
 					//System.out.println("Processing CPU");
-					int freeCPU = hasFreeCPU();
+					int freeCPU = hasFreeCPU(CPUs);
 					if(freeCPU != -1){// and there is an available CPU
-						//System.out.println("Processing "+currJob+" at "+currentTime);
-						if(CPUs.get(freeCPU).assignJob(currJob) == null){ //If the CPU was free and we didn't kick out another Job
+						//System.out.println("Processing "+currJob+" at "+currentTime)
+						Job checkedJob = CPUs.get(freeCPU).assignJob(currJob);
+						if(checkedJob == null){ //If the CPU was free and we didn't kick out another Job
 							//System.out.println("Job added to CPU "+freeCPU);
-							currJob.firstAddressedTime = System.currentTimeMillis();
+							if(currJob.firstAddressedTime == -1){
+								currJob.firstAddressedTime = System.currentTimeMillis();
+							}
+							processing.set(freeCPU, currJob); //Adds the current job to our processing list at the index corresponding to the CPU it will run on
 						}
-						processing.set(freeCPU, currJob); //Adds the current job to our processing list at the index corresponding to the CPU it will run on
+						else{
+							System.err.println("We kicked someone out");
+						}
 					}
 					else{
+						//System.out.println("No free CPUs");
 						int longer = hasLonger(currJob.timeNeeded, processing); //See if there is a job we should evict
 						if(longer != -1){ //If there is
-							System.out.println("Preempting the job on CPU "+longer+" with length of "+CPUs.get(longer).myJob.timeNeeded+" for job with length of "+ currJob.timeNeeded);
+							//System.out.println("Preempting the job on CPU "+longer);
 							Job evictedJob = CPUs.get(longer).assignJob(currJob); //Swap our current job with the job with the longest remaining time
 							toProcess.offer(evictedJob); //Add the evicted Job back to the queue
 						}
@@ -234,30 +305,46 @@ public class Driver {
 					//For now, we just assume IO requests can be handled independently. 
 				}
 			}
-
-			while( hasJob(processing) ){
-				for(int curCPU = 0; curCPU < CPUs.size(); curCPU++){ //Loop through all of our CPUs
-					if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
-						//System.out.println(curCPU);
-						currJob = CPUs.get(curCPU).isDone(); //Check if the Job on the current CPU is done.
-						if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
-							//System.out.println("CPU "+curCPU+" is free");
-							processed.offer(currJob);
-							processing.set(curCPU, null); //Clear the corresponding location in our processing queue
-							CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
-						}
+			while(!newJobs.isEmpty()){
+				Job newJob = newJobs.pop();
+				//System.out.println("Adding " +newJob);
+				newJob.enterTime = System.currentTimeMillis();
+				toProcess.add(newJob);
+			}
+			
+			for(int curCPU = 0; curCPU < numCPU; curCPU++){ //Loop through all of our CPUs
+				if(CPUs.get(curCPU).myJob != null){ //Skip CPUs that don't have a job
+					//System.out.println(curCPU);
+					long curTime = System.currentTimeMillis();
+					long timeWorked;
+					if(lastWork != 0){
+						timeWorked = (curTime-lastWork) ;
+					}
+					else{
+						timeWorked = 0;
+					}
+					//System.out.println("Done "+timeWorked+"ms of work since last cycle");
+					currJob = CPUs.get(curCPU).isDone(timeWorked); //Check if the Job on the current CPU is done.
+					if (currJob != null){ //If we are in fact done with this Job (isDone will return the completed Job)
+						//System.out.println("CPU "+curCPU+" is free");
+						processed.offer(currJob);
+						processing.set(curCPU, null); //Clear the corresponding location in our processing queue
+						CPUs.get(curCPU).myJob  = null; //Clear the CPU of the Job
 					}
 				}
+
 			}
+			lastWork = System.currentTimeMillis();
 		}
 		endTime = System.currentTimeMillis();
-		System.out.println("Scheduling ended at:    "+endTime);
+		//System.out.println("Scheduling ended at:    "+endTime);
 		evaluatePerformance(startTime, endTime, processed);
 	}
 
 	public void evaluatePerformance(long startTime, long endTime, LinkedList<Job> processed){
 		Job currJob;
 		int numJobs = processed.size();
+
 		System.out.println("All "+numJobs+" jobs finished");
 		System.out.println("Whole process took: "+(endTime-startTime)+"ms");
 
@@ -282,7 +369,7 @@ public class Driver {
 		System.out.println("Avg job length:            "+avgJobLength+"ms");
 	}
 
-	public int hasFreeCPU(){ //If there is a CPU that is currently free, return the index of that CPU
+	public int hasFreeCPU(ArrayList<CPU> CPUs){ //If there is a CPU that is currently free, return the index of that CPU
 		//System.out.println("Checking CPUs "+CPUs.size());
 		for(int i = 0; i < CPUs.size(); i++){ // otherwise, return -1
 			//System.out.println("Checking "+i);
@@ -293,14 +380,15 @@ public class Driver {
 
 		return -1;
 	}
-	
+
 	public int hasLonger(long currTime, ArrayList<Job> list){
-		//System.out.println("looking for something longer than "+currTime);
+		//System.out.println("Looking for something longer than "+currTime);
 		long longestTime = -1;
 		int longestLoc = -1;
 		for(int nextJob = 0; nextJob < list.size();nextJob++){
-			//System.out.println("Checking " +j);
+
 			long nextTime = list.get(nextJob).timeNeeded ;
+			//System.out.println("Checking " +nextJob+". Has "+nextTime);
 			if( nextTime > currTime){
 				if(nextTime > longestTime){
 					longestTime = nextTime;
@@ -361,10 +449,12 @@ public class Driver {
 				char nextType = nextLine.charAt(1);
 				int nextLength = Integer.parseInt(nextLine.substring(2));
 
-				Job j = new Job(nextProc, nextType, nextLength ); //Create a new job
-				jobs1.add(j);
-				jobs2.add(j);
-				jobs3.add(j);
+				Job j1 = new Job(nextProc, nextType, nextLength ); //Create a new job
+				Job j2 = new Job(nextProc, nextType, nextLength ); //Create a new job
+				Job j3 = new Job(nextProc, nextType, nextLength ); //Create a new job
+				jobs1.add(j1);
+				jobs2.add(j2);
+				jobs3.add(j3);
 				//System.out.println("Made "+j);
 			}
 		}
@@ -396,7 +486,7 @@ public class Driver {
 			d.processJobsPSJF(jobs3);
 		}
 	}
-	
+
 	private class JobLengthComparator implements Comparator{
 
 		@Override
@@ -411,7 +501,7 @@ public class Driver {
 			}
 			return 0;
 		}
-		
+
 	}
 
 }
