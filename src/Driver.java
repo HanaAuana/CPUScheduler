@@ -109,7 +109,7 @@ public class Driver {
 	public void processJobsSJF(ArrayList<Job> jobs){
 		Job currJob;
 		Comparator<Job> comparartor = new JobLengthComparator();
-		toProcess = new PriorityQueue<Job>(comparartor);
+		toProcess = new PriorityQueue<Job>(jobs.size(), comparartor);
 		processed = new LinkedList<Job>();
 		processing = new ArrayList<Job>(numCPU);
 		for(int i = 0; i < numCPU; i++){
@@ -181,7 +181,7 @@ public class Driver {
 	public void processJobsPSJF(ArrayList<Job> jobs){
 		Job currJob;
 		Comparator<Job> comparartor = new JobLengthComparator();
-		toProcess = new PriorityQueue<Job>(comparartor);
+		toProcess = new PriorityQueue<Job>(jobs.size(), comparartor);
 		processed = new LinkedList<Job>();
 		processing = new ArrayList<Job>(numCPU);
 		for(int i = 0; i < numCPU; i++){
